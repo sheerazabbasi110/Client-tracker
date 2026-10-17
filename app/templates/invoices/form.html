@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if invoice else 'New' }} Invoice · ClientTrack{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('invoices.list_invoices') }}">Invoices</a></li>
+        <li class="breadcrumb-item active">{{ 'Edit' if invoice else 'New' }}</li>
+    </ol>
+</nav>
+
+<form method="POST"
+    action="{{ url_for('invoices.edit_invoice', invoice_id=invoice.id) if invoice else url_for('invoices.create_invoice') }}">
+
+    <div class="card mb-3">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <h3 class="fw-bold mb-0">
+                    <i class="bi bi-receipt me-2 text-primary"></i>
+                    {{ 'Edit Invoice' if invoice else 'New Invoice' }}
+                </h3>
+                <div class="text-end">
+                    <div class="small text-muted">Invoice #</div>
+                    <div class="fw-semibold font-monospace">{{ invoice.invoice_number if invoice else next_number }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Client <span class="text-danger">*</span></label>
+                    <select name="client_id" class="form-select" required>
+                        <option value="">Select a client…</option>
+                        {% for c in clients %}
+                        <option value="{{ c.id }}" {% if (invoice and invoice.client_id==c.id) or (not invoice and
+                            form.get('client_id')|string==c.id|string) %}selected{% endif %}>
+                            {{ c.name }}{% if c.company %} — {{ c.company }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Project (optional)</label>
+                    <select name="project_id" class="form-select">
+                        <option value="">— None —</option>
+                        {% for p in projects %}
+                        <option value="{{ p.id }}" {% if (invoice and invoice.project_id==p.id) or (not invoice and
+                            form.get('project_id')|string==p.id|string) %}selected{% endif %}>
+                            {{ p.title }} ({{ p.client.name if p.client else '' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Issue Date <span class="text-danger">*</span></label>
+                    <input type="date" name="issue_date" class="form-control" required
+                        value="{{ (invoice.issue_date.strftime('%Y-%m-%d') if invoice and invoice.issue_date else form.get('issue_date', '')) or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Due Date <span class="text-danger">*</span></label>
+                    <input type="date" name="due_date" class="form-control" required
+                        value="{{ (invoice.due_date.strftime('%Y-%m-%d') if invoice and invoice.due_date else form.get('due_date', '')) or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        {% set cur = (invoice.status if invoice else form.get('status', 'Unpaid')) or 'Unpaid' %}
+                        {% for s in ['Draft', 'Unpaid', 'Paid', 'Overdue'] %}
+                        <option value="{{ s }}" {% if cur==s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tax Rate (%)</label>
+                    <input type="number" id="taxRateInput" name="tax_rate" step="0.01" min="0" class="form-control"
+                        value="{{ (invoice.tax_rate if invoice else form.get('tax_rate', '0.00')) or '0.00' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <strong>Line Items</strong>
+            <button type="button" id="addItemBtn" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i>Add Row
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Description</th>
+                            <th style="width:100px;">Qty</th>
+                            <th style="width:130px;">Unit Price</th>
+                            <th style="width:120px;" class="text-end">Subtotal</th>
+                            <th style="width:50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        {% if invoice and invoice.items %}
+                        {% for item in invoice.items %}
+                        <tr class="item-row">
+                            <td class="ps-3"><input type="text" name="item_description[]"
+                                    class="form-control form-control-sm item-description" value="{{ item.description }}"
+                                    required></td>
+                            <td><input type="number" name="item_quantity[]"
+                                    class="form-control form-control-sm item-qty" value="{{ item.quantity }}" min="1"
+                                    step="1"></td>
+                            <td><input type="number" name="item_unit_price[]"
+                                    class="form-control form-control-sm item-price"
+                                    value="{{ '%.2f'|format(item.unit_price|float) }}" min="0" step="0.01"></td>
+                            <td class="text-end item-subtotal">{{ '%.2f'|format(item.subtotal|float) }}</td>
+                            <td class="text-center"><button type="button"
+                                    class="btn btn-sm btn-outline-danger remove-item"><i
+                                        class="bi bi-x-lg"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr class="item-row">
+                            <td class="ps-3"><input type="text" name="item_description[]"
+                                    class="form-control form-control-sm item-description" placeholder="Description"
+                                    required></td>
+                            <td><input type="number" name="item_quantity[]"
+                                    class="form-control form-control-sm item-qty" value="1" min="1" step="1"></td>
+                            <td><input type="number" name="item_unit_price[]"
+                                    class="form-control form-control-sm item-price" value="0.00" min="0" step="0.01">
+                            </td>
+                            <td class="text-end item-subtotal">0.00</td>
+                            <td class="text-center"><button type="button"
+                                    class="btn btn-sm btn-outline-danger remove-item"><i
+                                        class="bi bi-x-lg"></i></button></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control"
+                        rows="5">{{ (invoice.notes if invoice else form.get('notes', '')) or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="totals-row">
+                        <span>Subtotal</span>
+                        <span>$<span id="calcSubtotal">0.00</span></span>
+                    </div>
+                    <div class="totals-row">
+                        <span>Tax</span>
+                        <span>$<span id="calcTax">0.00</span></span>
+                    </div>
+                    <div class="totals-row grand">
+                        <span>Total</span>
+                        <span>$<span id="calcTotal">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2 me-1"></i>{{ 'Save Changes' if invoice else 'Create Invoice' }}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/invoice.js') }}"></script>
+{% endblock %}

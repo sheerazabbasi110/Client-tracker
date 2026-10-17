@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if client else 'New' }} Client · ClientTrack{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('clients.list_clients') }}">Clients</a></li>
+        <li class="breadcrumb-item active">{{ 'Edit' if client else 'New' }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-person-{{ 'gear' if client else 'plus' }} me-2 text-primary"></i>
+                    {{ 'Edit Client' if client else 'New Client' }}
+                </h3>
+
+                <form method="POST"
+                    action="{{ url_for('clients.edit_client', client_id=client.id) if client else url_for('clients.create_client') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required
+                                value="{{ (client.name if client else form.get('name', '')) or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Company</label>
+                            <input type="text" name="company" class="form-control"
+                                value="{{ (client.company if client else form.get('company', '')) or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" required
+                                value="{{ (client.email if client else form.get('email', '')) or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input type="text" name="phone" class="form-control"
+                                value="{{ (client.phone if client else form.get('phone', '')) or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea name="address" class="form-control"
+                                rows="3">{{ (client.address if client else form.get('address', '')) or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{{ url_for('clients.list_clients') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2 me-1"></i>{{ 'Save Changes' if client else 'Create Client' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

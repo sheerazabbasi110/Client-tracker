@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }} · ClientTrack{% endblock %}
+
+{% block content %}
+<div class="mb-3 no-print">
+    <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('invoices.list_invoices') }}">Invoices</a></li>
+            <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex flex-wrap gap-2">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer me-1"></i>Print / Save PDF
+        </button>
+        <a href="{{ url_for('invoices.edit_invoice', invoice_id=invoice.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        {% if invoice.status != 'Paid' %}
+        <form method="POST" action="{{ url_for('invoices.mark_paid', invoice_id=invoice.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check2-circle me-1"></i>Mark as Paid
+            </button>
+        </form>
+        {% endif %}
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+            data-delete-url="{{ url_for('invoices.delete_invoice', invoice_id=invoice.id) }}"
+            data-delete-name="{{ invoice.invoice_number }}">
+            <i class="bi bi-trash me-1"></i>Delete
+        </button>
+    </div>
+</div>
+
+<div class="invoice-paper shadow-sm">
+    <div class="invoice-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <div class="invoice-title">INVOICE</div>
+            <div class="invoice-number">{{ invoice.invoice_number }}</div>
+        </div>
+        <div class="text-end">
+            <span class="badge badge-status badge-{{ invoice.status }} fs-6">{{ invoice.status }}</span>
+            <div class="mt-2 small text-muted">
+                <div><strong>Issue Date:</strong> {{ invoice.issue_date.strftime('%b %d, %Y') if invoice.issue_date else
+                    '—' }}</div>
+                <div><strong>Due Date:</strong> {{ invoice.due_date.strftime('%b %d, %Y') if invoice.due_date else '—'
+                    }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="text-uppercase small text-muted fw-semibold mb-1">Bill To</div>
+            {% if invoice.client %}
+            <div class="fw-bold fs-5">{{ invoice.client.name }}</div>
+            {% if invoice.client.company %}<div>{{ invoice.client.company }}</div>{% endif %}
+            <div>{{ invoice.client.email }}</div>
+            {% if invoice.client.phone %}<div>{{ invoice.client.phone }}</div>{% endif %}
+            {% if invoice.client.address %}<div class="text-muted mt-1" style="white-space: pre-line;">{{
+                invoice.client.address }}</div>{% endif %}
+            {% else %}
+            <div class="text-muted">— No client —</div>
+            {% endif %}
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="text-uppercase small text-muted fw-semibold mb-1">Project</div>
+            {% if invoice.project %}
+            <div class="fw-semibold">{{ invoice.project.title }}</div>
+            <div class="small text-muted">Status: {{ invoice.project.status }}</div>
+            {% else %}
+            <div class="text-muted">—</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-responsive mb-4">
+        <table class="table invoice-table align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.description }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-end">${{ item.unit_price | currency }}</td>
+                    <td class="text-end">${{ item.subtotal | currency }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">No line items.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            {% if invoice.notes %}
+            <div class="text-uppercase small text-muted fw-semibold mb-1">Notes</div>
+            <p class="small" style="white-space: pre-line;">{{ invoice.notes }}</p>
+            {% endif %}
+        </div>
+        <div class="col-md-5">
+            <div class="totals-box">
+                <div class="totals-row">
+                    <span>Subtotal</span>
+                    <span>${{ invoice.subtotal | currency }}</span>
+                </div>
+                <div class="totals-row">
+                    <span>Tax ({{ invoice.tax_rate }}%)</span>
+                    <span>${{ tax_amount | currency }}</span>
+                </div>
+                <div class="totals-row grand">
+                    <span>Total</span>
+                    <span>${{ invoice.total_amount | currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="mt-5">
+    <div class="text-center small text-muted">
+        Thank you for your business!
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Clients · ClientTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold mb-0">Clients</h2>
+        <p class="text-muted mb-0">{{ clients|length }} client(s) registered</p>
+    </div>
+    <a href="{{ url_for('clients.create_client') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus me-1"></i>New Client
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" id="clientSearchInput" class="form-control"
+                placeholder="Search by name, company or email..." value="{{ q }}">
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if clients %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Name</th>
+                        <th>Company</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th class="text-center">Projects</th>
+                        <th class="text-center">Invoices</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clients %}
+                    <tr data-client-row
+                        data-client-search="{{ (c.name ~ ' ' ~ (c.company or '') ~ ' ' ~ c.email) | lower }}">
+                        <td class="ps-3 fw-semibold">{{ c.name }}</td>
+                        <td>{{ c.company or '—' }}</td>
+                        <td><a href="mailto:{{ c.email }}" class="text-decoration-none">{{ c.email }}</a></td>
+                        <td>{{ c.phone or '—' }}</td>
+                        <td class="text-center"><span class="badge bg-secondary">{{ c.projects|length }}</span></td>
+                        <td class="text-center"><span class="badge bg-secondary">{{ c.invoices|length }}</span></td>
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('clients.edit_client', client_id=c.id) }}"
+                                class="btn btn-sm btn-outline-secondary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-delete-url="{{ url_for('clients.delete_client', client_id=c.id) }}"
+                                data-delete-name="{{ c.name }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="empty-state" id="clientSearchEmpty" style="display:none;">
+            <i class="bi bi-search"></i>
+            <p class="mb-0">No matching clients.</p>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-people"></i>
+            <p class="mb-2">No clients yet.</p>
+            <a href="{{ url_for('clients.create_client') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus me-1"></i>Add your first client
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
