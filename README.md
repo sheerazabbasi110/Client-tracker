@@ -233,27 +233,7 @@ erDiagram
 
 ---
 
-## 💡 How to Push to GitHub
 
-If you haven't initialized your Git repository yet, follow these commands:
-
-```bash
-# 1. Initialize git repository
-git init
-
-# 2. Add all files (the .gitignore will protect your .env and virtual environment)
-git add .
-
-# 3. Commit changes
-git commit -m "feat: initial commit - complete client tracker system"
-
-# 4. Set main branch
-git branch -M main
-
-# 5. Link your remote repository and push
-git remote add origin https://github.com/<your-username>/<your-repo-name>.git
-git push -u origin main
-```
 
 ---
 
